@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class Product3DViewer extends StatefulWidget {
@@ -17,32 +16,11 @@ class Product3DViewer extends StatefulWidget {
 }
 
 class _Product3DViewerState extends State<Product3DViewer> {
-  bool _modelLoadError = false;
-
   @override
   Widget build(BuildContext context) {
-    if (_modelLoadError) {
-      return _buildFallbackImage();
-    }
-
-    return ModelViewer(
-      src: widget.modelUrl,
-      alt: 'Product 3D Model',
-      ar: false,
-      autoRotate: true,
-      cameraControls: true,
-      disableZoom: false,
-      backgroundColor: Colors.transparent,
-      loading: Loading.eager,
-      onWebViewCreated: (controller) {
-        // Model viewer created
-      },
-      onError: (error) {
-        setState(() {
-          _modelLoadError = true;
-        });
-      },
-    );
+    // TODO: Implement 3D viewer when model_viewer_plus is added
+    // For now, just show the fallback image
+    return _buildFallbackImage();
   }
 
   Widget _buildFallbackImage() {

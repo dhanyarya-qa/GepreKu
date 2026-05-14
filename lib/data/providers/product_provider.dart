@@ -1,29 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import '../../domain/entities/product.dart';
 
-// Firestore Instance
-final firestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instance;
-});
-
-// Products Stream Provider
+// Mock Products Provider
 final productsProvider = StreamProvider<List<Product>>((ref) {
-  final firestore = ref.watch(firestoreProvider);
-  
-  return firestore
-      .collection('products')
-      .orderBy('sales_count', descending: true)
-      .snapshots()
-      .map((snapshot) {
-    return snapshot.docs.map((doc) {
-      return Product.fromJson({
-        'id': doc.id,
-        ...doc.data(),
-      });
-    }).toList();
-  });
+  // Return mock products
+  return Stream.value(_mockProducts);
 });
 
 // Best Sellers Provider (Top 5)
@@ -58,71 +39,104 @@ class ProductService {
   
   ProductService(this.ref);
   
-  FirebaseFirestore get _firestore => ref.read(firestoreProvider);
-  Box get _cacheBox => Hive.box('products_cache');
-  
   // Get Product by ID
   Future<Product?> getProductById(String productId) async {
+    await Future.delayed(const Duration(milliseconds: 500));
     try {
-      final doc = await _firestore
-          .collection('products')
-          .doc(productId)
-          .get();
-      
-      if (!doc.exists) return null;
-      
-      return Product.fromJson({
-        'id': doc.id,
-        ...doc.data()!,
-      });
+      return _mockProducts.firstWhere((p) => p.id == productId);
     } catch (e) {
-      // Try to get from cache
-      final cached = _cacheBox.get(productId);
-      if (cached != null) {
-        return Product.fromJson(Map<String, dynamic>.from(cached));
-      }
       return null;
     }
   }
   
   // Get Recommendations based on product
   Future<List<Product>> getRecommendations(String productId) async {
+    await Future.delayed(const Duration(milliseconds: 500));
     try {
       final product = await getProductById(productId);
       if (product == null) return [];
       
-      // Get products from same category with high sales
-      final snapshot = await _firestore
-          .collection('products')
-          .where('category', isEqualTo: product.category)
-          .where('id', isNotEqualTo: productId)
-          .orderBy('sales_count', descending: true)
-          .limit(3)
-          .get();
-      
-      return snapshot.docs.map((doc) {
-        return Product.fromJson({
-          'id': doc.id,
-          ...doc.data(),
-        });
-      }).toList();
+      // Get products from same category
+      return _mockProducts
+          .where((p) => p.category == product.category && p.id != productId)
+          .take(3)
+          .toList();
     } catch (e) {
       return [];
     }
   }
-  
-  // Cache products for offline mode
-  Future<void> cacheProducts(List<Product> products) async {
-    for (final product in products) {
-      await _cacheBox.put(product.id, product.toJson());
-    }
-  }
-  
-  // Get cached products
-  List<Product> getCachedProducts() {
-    final cached = _cacheBox.values.toList();
-    return cached.map((item) {
-      return Product.fromJson(Map<String, dynamic>.from(item));
-    }).toList();
-  }
 }
+
+// Mock Data
+final List<Product> _mockProducts = [
+  Product(
+    id: 'prod_001',
+    name: 'Ayam Geprek Original',
+    description: 'Ayam goreng crispy dengan sambal geprek level 1-10',
+    category: 'Main Course',
+    price: 25000,
+    model3dUrl: null,
+    fallbackImageUrl: 'https://via.placeholder.com/300x200?text=Ayam+Geprek',
+    salesCount: 150,
+    isSpicy: true,
+    stockByOutlet: {'outlet_001': 50},
+    createdAt: DateTime.now().subtract(const Duration(days: 30)),
+    updatedAt: DateTime.now(),
+  ),
+  Product(
+    id: 'prod_002',
+    name: 'Ayam Geprek Keju',
+    description: 'Ayam geprek dengan topping keju mozarella',
+    category: 'Main Course',
+    price: 30000,
+    model3dUrl: null,
+    fallbackImageUrl: 'https://via.placeholder.com/300x200?text=Ayam+Geprek+Keju',
+    salesCount: 120,
+    isSpicy: true,
+    stockByOutlet: {'outlet_001': 40},
+    createdAt: DateTime.now().subtract(const Duration(days: 25)),
+    updatedAt: DateTime.now(),
+  ),
+  Product(
+    id: 'prod_003',
+    name: 'Nasi Goreng Spesial',
+    description: 'Nasi goreng dengan telur, ayam, dan sayuran',
+    category: 'Main Course',
+    price: 20000,
+    model3dUrl: null,
+    fallbackImageUrl: 'https://via.placeholder.com/300x200?text=Nasi+Goreng',
+    salesCount: 100,
+    isSpicy: false,
+    stockByOutlet: {'outlet_001': 60},
+    createdAt: DateTime.now().subtract(const Duration(days: 20)),
+    updatedAt: DateTime.now(),
+  ),
+  Product(
+    id: 'prod_004',
+    name: 'Es Teh Jumbo',
+    description: 'Es teh manis ukuran jumbo',
+    category: 'Beverages',
+    price: 8000,
+    model3dUrl: null,
+    fallbackImageUrl: 'https://via.placeholder.com/300x200?text=Es+Teh',
+    salesCount: 200,
+    isSpicy: false,
+    stockByOutlet: {'outlet_001': 100},
+    createdAt: DateTime.now().subtract(const Duration(days: 15)),
+    updatedAt: DateTime.now(),
+  ),
+  Product(
+    id: 'prod_005',
+    name: 'Jus Alpukat',
+    description: 'Jus alpukat segar dengan susu',
+    category: 'Beverages',
+    price: 15000,
+    model3dUrl: null,
+    fallbackImageUrl: 'https://via.placeholder.com/300x200?text=Jus+Alpukat',
+    salesCount: 80,
+    isSpicy: false,
+    stockByOutlet: {'outlet_001': 30},
+    createdAt: DateTime.now().subtract(const Duration(days: 10)),
+    updatedAt: DateTime.now(),
+  ),
+];

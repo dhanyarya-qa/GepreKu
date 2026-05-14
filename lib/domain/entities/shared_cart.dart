@@ -1,38 +1,55 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'cart_item.dart';
 
-part 'shared_cart.freezed.dart';
-part 'shared_cart.g.dart';
+class SharedCart {
+  final String id;
+  final String outletId;
+  final String tableId;
+  final String ownerId;
+  final List<String> participantIds;
+  final Map<String, CartItem> items;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
-@freezed
-class SharedCart with _$SharedCart {
-  const factory SharedCart({
-    required String id,
-    required String outletId,
-    required String tableId,
-    required String ownerId,
-    required List<String> participantIds,
-    required Map<String, CartItem> items,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-  }) = _SharedCart;
+  const SharedCart({
+    required this.id,
+    required this.outletId,
+    required this.tableId,
+    required this.ownerId,
+    required this.participantIds,
+    required this.items,
+    required this.createdAt,
+    required this.updatedAt,
+  });
 
-  factory SharedCart.fromJson(Map<String, dynamic> json) =>
-      _$SharedCartFromJson(json);
-}
+  double get totalAmount =>
+      items.values.fold(0.0, (sum, item) => sum + item.subtotal);
 
-extension SharedCartExtension on SharedCart {
-  double get totalAmount {
-    return items.values.fold(
-      0.0,
-      (sum, item) => sum + (item.price * item.quantity),
+  int get totalItems =>
+      items.values.fold(0, (sum, item) => sum + item.quantity);
+
+  factory SharedCart.fromJson(Map<String, dynamic> json) {
+    return SharedCart(
+      id: json['id'] as String,
+      outletId: json['outlet_id'] as String,
+      tableId: json['table_id'] as String,
+      ownerId: json['owner_id'] as String,
+      participantIds: List<String>.from(json['participant_ids'] as List),
+      items: (json['items'] as Map<String, dynamic>).map(
+        (k, v) => MapEntry(k, CartItem.fromJson(v as Map<String, dynamic>)),
+      ),
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
 
-  int get totalItems {
-    return items.values.fold(
-      0,
-      (sum, item) => sum + item.quantity,
-    );
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'outlet_id': outletId,
+    'table_id': tableId,
+    'owner_id': ownerId,
+    'participant_ids': participantIds,
+    'items': items.map((k, v) => MapEntry(k, v.toJson())),
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
+  };
 }

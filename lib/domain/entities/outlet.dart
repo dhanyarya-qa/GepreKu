@@ -1,36 +1,83 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+enum OutletStatus { open, closed }
 
-part 'outlet.freezed.dart';
-part 'outlet.g.dart';
+class OperatingHours {
+  final String open;
+  final String close;
 
-enum OutletStatus {
-  open,
-  closed,
+  const OperatingHours({required this.open, required this.close});
+
+  factory OperatingHours.fromJson(Map<String, dynamic> json) {
+    return OperatingHours(
+      open: json['open'] as String,
+      close: json['close'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {'open': open, 'close': close};
 }
 
-@freezed
-class Outlet with _$Outlet {
-  const factory Outlet({
-    required String id,
-    required String name,
-    required String address,
-    required GeoPoint location,
-    required Map<String, OperatingHours> operatingHours,
-    required OutletStatus status,
-    required DateTime createdAt,
-  }) = _Outlet;
+class GeoPoint {
+  final double latitude;
+  final double longitude;
 
-  factory Outlet.fromJson(Map<String, dynamic> json) => _$OutletFromJson(json);
+  const GeoPoint({required this.latitude, required this.longitude});
+
+  factory GeoPoint.fromJson(Map<String, dynamic> json) {
+    return GeoPoint(
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'latitude': latitude,
+    'longitude': longitude,
+  };
 }
 
-@freezed
-class OperatingHours with _$OperatingHours {
-  const factory OperatingHours({
-    required String open,
-    required String close,
-  }) = _OperatingHours;
+class Outlet {
+  final String id;
+  final String name;
+  final String address;
+  final GeoPoint location;
+  final Map<String, OperatingHours> operatingHours;
+  final OutletStatus status;
+  final DateTime createdAt;
 
-  factory OperatingHours.fromJson(Map<String, dynamic> json) =>
-      _$OperatingHoursFromJson(json);
+  const Outlet({
+    required this.id,
+    required this.name,
+    required this.address,
+    required this.location,
+    required this.operatingHours,
+    required this.status,
+    required this.createdAt,
+  });
+
+  factory Outlet.fromJson(Map<String, dynamic> json) {
+    return Outlet(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      address: json['address'] as String,
+      location: GeoPoint.fromJson(json['location'] as Map<String, dynamic>),
+      operatingHours: (json['operating_hours'] as Map<String, dynamic>).map(
+        (k, v) => MapEntry(k, OperatingHours.fromJson(v as Map<String, dynamic>)),
+      ),
+      status: OutletStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => OutletStatus.closed,
+      ),
+      createdAt: DateTime.parse(json['created_at'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'address': address,
+    'location': location.toJson(),
+    'operating_hours': operatingHours.map((k, v) => MapEntry(k, v.toJson())),
+    'status': status.name,
+    'created_at': createdAt.toIso8601String(),
+  };
 }

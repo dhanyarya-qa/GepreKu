@@ -20,7 +20,7 @@ class HeroCarousel3D extends StatefulWidget {
 
 class _HeroCarousel3DState extends State<HeroCarousel3D> {
   int _currentIndex = 0;
-  final CarouselController _carouselController = CarouselController();
+  final CarouselSliderController _carouselController = CarouselSliderController();
 
   @override
   Widget build(BuildContext context) {

@@ -1,126 +1,51 @@
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/user.dart';
 
-// Firebase Auth Instance
-final firebaseAuthProvider = Provider<firebase_auth.FirebaseAuth>((ref) {
-  return firebase_auth.FirebaseAuth.instance;
+// Mock Auth State Provider
+final authStateProvider = StreamProvider<MockUser?>((ref) {
+  // Return mock user for demo
+  return Stream.value(MockUser(uid: 'demo_user'));
 });
 
-// Auth State Stream
-final authStateProvider = StreamProvider<firebase_auth.User?>((ref) {
-  return ref.watch(firebaseAuthProvider).authStateChanges();
-});
-
-// Current User Provider
+// Mock Current User Provider
 final currentUserProvider = StreamProvider<User?>((ref) {
-  final authState = ref.watch(authStateProvider);
-  
-  return authState.when(
-    data: (firebaseUser) {
-      if (firebaseUser == null) {
-        return Stream.value(null);
-      }
-      
-      return FirebaseFirestore.instance
-          .collection('users')
-          .doc(firebaseUser.uid)
-          .snapshots()
-          .map((doc) {
-        if (!doc.exists) return null;
-        return User.fromJson({
-          'id': doc.id,
-          ...doc.data()!,
-        });
-      });
-    },
-    loading: () => Stream.value(null),
-    error: (_, __) => Stream.value(null),
-  );
+  // Return mock user data
+  return Stream.value(User(
+    id: 'demo_user',
+    name: 'Demo User',
+    email: 'demo@gepreku.com',
+    phone: '+6281234567890',
+    role: UserRole.customer,
+    outletId: null,
+    createdAt: DateTime.now(),
+  ));
 });
 
-// Auth Service
-final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService(ref);
+// Mock Auth Service
+final authServiceProvider = Provider<MockAuthService>((ref) {
+  return MockAuthService();
 });
 
-class AuthService {
-  final Ref ref;
+class MockUser {
+  final String uid;
+  MockUser({required this.uid});
+}
+
+class MockAuthService {
+  String? get currentUserId => 'demo_user';
   
-  AuthService(this.ref);
-  
-  firebase_auth.FirebaseAuth get _auth => ref.read(firebaseAuthProvider);
-  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
-  
-  // Sign In with Email & Password
   Future<User?> signInWithEmail(String email, String password) async {
-    try {
-      final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
-      if (credential.user == null) return null;
-      
-      final userDoc = await _firestore
-          .collection('users')
-          .doc(credential.user!.uid)
-          .get();
-      
-      if (!userDoc.exists) return null;
-      
-      return User.fromJson({
-        'id': userDoc.id,
-        ...userDoc.data()!,
-      });
-    } catch (e) {
-      rethrow;
-    }
+    await Future.delayed(const Duration(seconds: 1));
+    return User(
+      id: 'demo_user',
+      name: 'Demo User',
+      email: email,
+      role: UserRole.customer,
+      createdAt: DateTime.now(),
+    );
   }
   
-  // Sign Up with Email & Password
-  Future<User?> signUpWithEmail({
-    required String email,
-    required String password,
-    required String name,
-    String? phone,
-    UserRole role = UserRole.customer,
-  }) async {
-    try {
-      final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
-      if (credential.user == null) return null;
-      
-      final user = User(
-        id: credential.user!.uid,
-        name: name,
-        email: email,
-        phone: phone,
-        role: role,
-        outletId: null,
-        createdAt: DateTime.now(),
-      );
-      
-      await _firestore
-          .collection('users')
-          .doc(user.id)
-          .set(user.toJson());
-      
-      return user;
-    } catch (e) {
-      rethrow;
-    }
-  }
-  
-  // Sign Out
   Future<void> signOut() async {
-    await _auth.signOut();
+    await Future.delayed(const Duration(milliseconds: 500));
   }
-  
-  // Get Current User ID
-  String? get currentUserId => _auth.currentUser?.uid;
 }
